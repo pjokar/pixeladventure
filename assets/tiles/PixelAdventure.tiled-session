@@ -7,6 +7,44 @@
     "expandedProjectPaths": [
     ],
     "fileStates": {
+        "Level_01.tmx": {
+            "expandedObjectLayers": [
+                4
+            ],
+            "scale": 3.1649456521739125,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 329.38954237142616,
+                "y": 215.8014939469392
+            }
+        },
+        "Level_01_parallax.tmx": {
+            "expandedObjectLayers": [
+                4,
+                5
+            ],
+            "scale": 3.1649456521739125,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 298.7413067742767,
+                "y": 180.72980166566504
+            }
+        },
+        "Level_test.tmx": {
+            "expandedObjectLayers": [
+                4,
+                5
+            ],
+            "scale": 3.1649456521739125,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 297.79342319910717,
+                "y": 180.09787928221863
+            }
+        },
+        "Pixel Adventure.tsx": {
+            "scaleInEditor": 1
+        }
     },
     "last.imagePath": "/Users/pedram/Projects/_private/pixel_adventure/assets/images/Terrain",
     "map.height": 23,
@@ -18,6 +56,10 @@
     ],
     "project": "PixelAdventure.tiled-project",
     "recentFiles": [
+        "Pixel Adventure.tsx",
+        "Level_test.tmx",
+        "Level_01.tmx",
+        "Level_01_parallax.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

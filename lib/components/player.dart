@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flame/components.dart';
 import 'package:flutter/services.dart';
+import 'package:pixel_adventure/components/obstacle.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 import 'package:pixel_adventure/utils.dart';
 
@@ -12,10 +13,16 @@ class Player extends SpriteAnimationGroupComponent
   late final SpriteAnimation idleAnimation;
   late final SpriteAnimation runAnimation;
   final double stepTime = 0.05;
+  List<Obstacle> obstacles = [];
 
   double horizontalMovement = 0;
-  double moveSpeed = 100;
   Vector2 velocity = Vector2.zero();
+  final double _moveSpeed = 100;
+  final double _gravityForce = 50;
+  final double _jumpingForce = 460;
+  final double _terminalVelocity = 300;
+  bool _isJumping = false;
+  bool _isOnGround = false;
 
   String characterName;
 
@@ -26,15 +33,53 @@ class Player extends SpriteAnimationGroupComponent
 
   @override
   FutureOr<void> onLoad() {
+    debugMode = true;
     _loadAnimations();
     return super.onLoad();
   }
 
   @override
   void update(double dt) {
+    super.update(dt);
     _updatePlayerState();
     _updatePlayerMovement(dt);
-    super.update(dt);
+    _checkHorizontalCollision(dt);
+    _applyGravity(dt);
+    _checkVerticalCollision(dt);
+  }
+
+  void _checkHorizontalCollision(dt) {
+    for (final obstacle in obstacles) {
+      if (!obstacle.isPlatform) {
+        if (Utils.checkIsCollision(this, obstacle)) {
+          if (velocity.x > 0) {
+            velocity.x = 0;
+            position.x = obstacle.position.x - width;
+          }
+
+          if (velocity.x < 0) {
+            velocity.x = 0;
+            position.x = obstacle.position.x + obstacle.width + width;
+          }
+        }
+      }
+    }
+  }
+
+  void _checkVerticalCollision(dt) {
+    for (final obstacle in obstacles) {
+      if (obstacle.isPlatform) {
+      } else {
+        if (Utils.checkIsCollision(this, obstacle)) {
+          if (velocity.y > 0) {
+            velocity.y = 0;
+            position.y = obstacle.position.y - height;
+            _isOnGround = true;
+            break;
+          }
+        }
+      }
+    }
   }
 
   @override
@@ -43,6 +88,9 @@ class Player extends SpriteAnimationGroupComponent
         keysPressed.contains(LogicalKeyboardKey.arrowLeft);
     final isRightKeyPressed = keysPressed.contains(LogicalKeyboardKey.keyD) ||
         keysPressed.contains(LogicalKeyboardKey.arrowRight);
+
+    _isJumping = keysPressed.contains(LogicalKeyboardKey.space) ||
+        keysPressed.contains(LogicalKeyboardKey.arrowUp);
 
     horizontalMovement = 0;
     horizontalMovement += isLeftKeyPressed ? -1 : 0;
@@ -96,7 +144,13 @@ class Player extends SpriteAnimationGroupComponent
   }
 
   void _updatePlayerMovement(double dt) {
-    velocity.x = horizontalMovement * moveSpeed;
+    velocity.x = horizontalMovement * _moveSpeed;
     position.x += velocity.x * dt;
+  }
+
+  void _applyGravity(double dt) {
+    velocity.y += _gravityForce; // Gravity
+    velocity.y = velocity.y.clamp(-_jumpingForce, _terminalVelocity);
+    position.y += velocity.y * dt;
   }
 }
