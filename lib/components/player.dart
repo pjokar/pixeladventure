@@ -6,12 +6,17 @@ import 'package:pixel_adventure/components/obstacle.dart';
 import 'package:pixel_adventure/pixel_adventure.dart';
 import 'package:pixel_adventure/utils.dart';
 
-enum PlayerState { idle, run, jump, hit, fall }
+enum PlayerState { idle, run, jump, doubleJump, wallJump, hit, fall }
 
 class Player extends SpriteAnimationGroupComponent
     with HasGameRef<PixelAdventure>, KeyboardHandler {
   late final SpriteAnimation idleAnimation;
   late final SpriteAnimation runAnimation;
+  late final SpriteAnimation jumpAnimation;
+  late final SpriteAnimation fallAnimation;
+  late final SpriteAnimation doubleJumpAnimation;
+  late final SpriteAnimation wallJumpAnimation;
+
   final double stepTime = 0.05;
   List<Obstacle> obstacles = [];
 
@@ -19,8 +24,10 @@ class Player extends SpriteAnimationGroupComponent
   Vector2 velocity = Vector2.zero();
   final double _moveSpeed = 100;
   final double _gravityForce = 50;
-  final double _jumpingForce = 460;
+  final double _jumpingForce = 560;
   final double _terminalVelocity = 300;
+  final double _maxJumps = 2;
+  double _jumpCount = 0;
   bool _isJumping = false;
   bool _isOnGround = false;
 
@@ -55,11 +62,13 @@ class Player extends SpriteAnimationGroupComponent
           if (velocity.x > 0) {
             velocity.x = 0;
             position.x = obstacle.position.x - width;
+            break;
           }
 
           if (velocity.x < 0) {
             velocity.x = 0;
             position.x = obstacle.position.x + obstacle.width + width;
+            break;
           }
         }
       }
@@ -69,12 +78,26 @@ class Player extends SpriteAnimationGroupComponent
   void _checkVerticalCollision(dt) {
     for (final obstacle in obstacles) {
       if (obstacle.isPlatform) {
+        if (Utils.checkIsCollision(this, obstacle)) {
+          if (velocity.y > 0) {
+            velocity.y = 0;
+            position.y = obstacle.position.y - height;
+            _isOnGround = true;
+            break;
+          }
+        }
       } else {
         if (Utils.checkIsCollision(this, obstacle)) {
           if (velocity.y > 0) {
             velocity.y = 0;
             position.y = obstacle.position.y - height;
             _isOnGround = true;
+            break;
+          }
+          if (velocity.y < 0) {
+            velocity.y = 0;
+            position.y = obstacle.position.y + obstacle.height;
+            _isOnGround = false;
             break;
           }
         }
@@ -102,10 +125,18 @@ class Player extends SpriteAnimationGroupComponent
   void _loadAnimations() {
     idleAnimation = _getSpriteAnimation(PlayerState.idle, 11);
     runAnimation = _getSpriteAnimation(PlayerState.run, 12);
+    jumpAnimation = _getSpriteAnimation(PlayerState.jump, 1);
+    fallAnimation = _getSpriteAnimation(PlayerState.fall, 1);
+    doubleJumpAnimation = _getSpriteAnimation(PlayerState.doubleJump, 6);
+    wallJumpAnimation = _getSpriteAnimation(PlayerState.wallJump, 5);
 
     animations = {
       PlayerState.idle: idleAnimation,
-      PlayerState.run: runAnimation
+      PlayerState.run: runAnimation,
+      PlayerState.jump: jumpAnimation,
+      PlayerState.fall: fallAnimation,
+      PlayerState.doubleJump: doubleJumpAnimation,
+      PlayerState.wallJump: wallJumpAnimation,
     };
 
     current = PlayerState.idle;
@@ -115,7 +146,7 @@ class Player extends SpriteAnimationGroupComponent
       PlayerState playerState, int sequencesAmount) {
     return SpriteAnimation.fromFrameData(
       game.images.fromCache(
-          'Main Characters/$characterName/${Utils.capitalizeFirstLetter(playerState.name)} (32x32).png'),
+          'Main Characters/$characterName/${Utils.convertToTitleCase(playerState.name)} (32x32).png'),
       SpriteAnimationData.sequenced(
         amount: sequencesAmount,
         stepTime: stepTime,
@@ -129,9 +160,7 @@ class Player extends SpriteAnimationGroupComponent
 
     if (velocity.x < 0 && scale.x > 0) {
       flipHorizontallyAroundCenter();
-    }
-
-    if (velocity.x > 0 && scale.x < 0) {
+    } else if (velocity.x > 0 && scale.x < 0) {
       flipHorizontallyAroundCenter();
     }
 
@@ -140,12 +169,38 @@ class Player extends SpriteAnimationGroupComponent
       playerState = PlayerState.run;
     }
 
+    // check if is falling
+    if (velocity.y > 0) {
+      playerState = PlayerState.fall;
+    }
+
+    // check if is jumping
+    if (velocity.y < 0) {
+      playerState = PlayerState.jump;
+    }
+
     current = playerState;
   }
 
   void _updatePlayerMovement(double dt) {
+    if (_isJumping && _isOnGround) {
+      _jump(dt);
+    }
+
+    // to avoid that player can jump while falling
+    // if (velocity.y > _gravityForce) {
+    //   _isOnGround = false;
+    // }
+
     velocity.x = horizontalMovement * _moveSpeed;
     position.x += velocity.x * dt;
+  }
+
+  void _jump(dt) {
+    velocity.y = -_jumpingForce;
+    position.y += velocity.y * dt;
+    _isJumping = false;
+    _isOnGround = false;
   }
 
   void _applyGravity(double dt) {

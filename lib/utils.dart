@@ -8,6 +8,13 @@ class Utils {
     return s[0].toUpperCase() + s.substring(1);
   }
 
+  static String convertToTitleCase(String input) {
+    final RegExp exp = RegExp(r'([a-z])([A-Z])');
+    String result =
+        input.replaceAllMapped(exp, (Match m) => '${m.group(1)} ${m.group(2)}');
+    return result[0].toUpperCase() + result.substring(1);
+  }
+
   static bool isWebPlatform() {
     return kIsWeb;
   }
@@ -25,9 +32,10 @@ class Utils {
 
     // depending on player's direction the coordinates of x and y flip!
     final fixedPlayerX = player.scale.x < 0 ? playerX - playerWidth : playerX;
+    final fixedPlayerY = obstacle.isPlatform ? playerY + playerHeight : playerY;
 
-    return (playerY < obstacleY + obstacleHeight &&
-        playerY + playerHeight > obstacleY &&
+    return (fixedPlayerY < obstacleY + obstacleHeight &&
+        fixedPlayerY + playerHeight > obstacleY &&
         fixedPlayerX < obstacleX + obstacleWidth &&
         fixedPlayerX + playerWidth > obstacleX);
   }
