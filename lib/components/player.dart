@@ -26,7 +26,7 @@ class Player extends SpriteAnimationGroupComponent
   final double _gravityForce = 50;
   final double _jumpingForce = 560;
   final double _terminalVelocity = 300;
-  final double _maxJumps = 2;
+  final double _maxJumps = 2; // Maximal 2 Sprünge (ein Doppelsprung)
   double _jumpCount = 0;
   bool _isJumping = false;
   bool _isOnGround = false;
@@ -83,6 +83,7 @@ class Player extends SpriteAnimationGroupComponent
             velocity.y = 0;
             position.y = obstacle.position.y - height;
             _isOnGround = true;
+            _jumpCount = 0; // Zähler zurücksetzen, wenn auf dem Boden
             break;
           }
         }
@@ -92,6 +93,7 @@ class Player extends SpriteAnimationGroupComponent
             velocity.y = 0;
             position.y = obstacle.position.y - height;
             _isOnGround = true;
+            _jumpCount = 0; // Zähler zurücksetzen, wenn auf dem Boden
             break;
           }
           if (velocity.y < 0) {
@@ -164,43 +166,46 @@ class Player extends SpriteAnimationGroupComponent
       flipHorizontallyAroundCenter();
     }
 
-    // check if we're moving and set player state to run
+    // Check if running
     if (velocity.x != 0) {
       playerState = PlayerState.run;
     }
 
-    // check if is falling
+    // Check if falling
     if (velocity.y > 0) {
       playerState = PlayerState.fall;
     }
 
-    // check if is jumping
-    if (velocity.y < 0) {
+    // Check if jumping
+    if (velocity.y < 0 && _jumpCount == 1) {
       playerState = PlayerState.jump;
+    }
+
+    // Check if double jumping
+    if (velocity.y < 0 && _jumpCount == 2) {
+      playerState = PlayerState.doubleJump;
     }
 
     current = playerState;
   }
 
   void _updatePlayerMovement(double dt) {
-    if (_isJumping && _isOnGround) {
+    if (_isJumping && (_isOnGround || _jumpCount < _maxJumps)) {
       _jump(dt);
     }
-
-    // to avoid that player can jump while falling
-    // if (velocity.y > _gravityForce) {
-    //   _isOnGround = false;
-    // }
 
     velocity.x = horizontalMovement * _moveSpeed;
     position.x += velocity.x * dt;
   }
 
-  void _jump(dt) {
-    velocity.y = -_jumpingForce;
-    position.y += velocity.y * dt;
-    _isJumping = false;
-    _isOnGround = false;
+  void _jump(double dt) {
+    if (_jumpCount < _maxJumps) {
+      velocity.y = -_jumpingForce;
+      position.y += velocity.y * dt;
+      _jumpCount++;
+      _isJumping = false;
+      _isOnGround = false;
+    }
   }
 
   void _applyGravity(double dt) {
